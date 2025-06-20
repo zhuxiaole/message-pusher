@@ -453,7 +453,7 @@ const MessagesTable = () => {
           {message.content ? (
             <div
               dangerouslySetInnerHTML={{
-                __html: marked.parse(message.content),
+                __html: marked.parse(message.content.replaceAll(/\n/g, '<br />')),
               }}
             ></div>
           ) : (

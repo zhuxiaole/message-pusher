@@ -30,11 +30,18 @@ type larkTextContent struct {
 }
 
 type larkCardContent struct {
+	Schema string `json:"schema"`
 	Config struct {
 		WideScreenMode bool `json:"wide_screen_mode"`
 		EnableForward  bool `json:"enable_forward"`
-	}
-	Elements []larkMessageRequestCardElement `json:"elements"`
+	} `json:"config"`
+	Header struct {
+		Template string                            `json:"template"`
+		Title    larkMessageRequestCardElementText `json:"title"`
+	} `json:"header"`
+	Body struct {
+		Elements []larkMessageRequestCardElementText `json:"elements"`
+	} `json:"body"`
 }
 
 type larkMessageRequest struct {
@@ -76,15 +83,47 @@ func SendLarkMessage(message *model.Message, user *model.User, channel_ *model.C
 		messageRequest.Content.Text = atPrefix + message.Description
 	} else {
 		messageRequest.MessageType = "interactive"
+		messageRequest.Card.Schema = "2.0"
 		messageRequest.Card.Config.WideScreenMode = true
 		messageRequest.Card.Config.EnableForward = true
-		messageRequest.Card.Elements = append(messageRequest.Card.Elements, larkMessageRequestCardElement{
-			Tag: "div",
-			Text: larkMessageRequestCardElementText{
-				Content: atPrefix + message.Content,
-				Tag:     "lark_md",
-			},
-		})
+		if message.Title != "" {
+			switch message.Type {
+			case "info":
+				messageRequest.Card.Header.Template = "blue"
+			case "warning":
+				messageRequest.Card.Header.Template = "orange"
+			case "success":
+				messageRequest.Card.Header.Template = "green"
+			case "error":
+				messageRequest.Card.Header.Template = "red"
+			default:
+				messageRequest.Card.Header.Template = "blue"
+			}
+			messageRequest.Card.Header.Title = larkMessageRequestCardElementText{
+				Content: message.Title,
+				Tag:     "plain_text",
+			}
+		}
+
+		if atPrefix != "" {
+			messageRequest.Card.Body.Elements = append(messageRequest.Card.Body.Elements, larkMessageRequestCardElementText{
+				Content: atPrefix,
+				Tag:     "markdown",
+			})
+		}
+		if message.Elements == nil || len(message.Elements) == 0 {
+			messageRequest.Card.Body.Elements = append(messageRequest.Card.Body.Elements, larkMessageRequestCardElementText{
+				Content: message.Content,
+				Tag:     "markdown",
+			})
+		} else {
+			for _, element := range message.Elements {
+				messageRequest.Card.Body.Elements = append(messageRequest.Card.Body.Elements, larkMessageRequestCardElementText{
+					Content: element,
+					Tag:     "markdown",
+				})
+			}
+		}
 	}
 
 	now := time.Now()

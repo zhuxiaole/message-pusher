@@ -120,15 +120,49 @@ func SendLarkAppMessage(message *model.Message, user *model.User, channel_ *mode
 	} else {
 		request.MsgType = "interactive"
 		content := larkCardContent{}
+		content.Schema = "2.0"
 		content.Config.WideScreenMode = true
 		content.Config.EnableForward = true
-		content.Elements = append(content.Elements, larkMessageRequestCardElement{
-			Tag: "div",
-			Text: larkMessageRequestCardElementText{
-				Content: atPrefix + message.Content,
-				Tag:     "lark_md",
-			},
-		})
+		if message.Title != "" {
+			switch message.Type {
+			case "info":
+				content.Header.Template = "blue"
+			case "warning":
+				content.Header.Template = "orange"
+			case "success":
+				content.Header.Template = "green"
+			case "error":
+				content.Header.Template = "red"
+			default:
+				content.Header.Template = "blue"
+			}
+			content.Header.Title = larkMessageRequestCardElementText{
+				Content: message.Title,
+				Tag:     "plain_text",
+			}
+		}
+
+		if atPrefix != "" {
+			content.Body.Elements = append(content.Body.Elements, larkMessageRequestCardElementText{
+				Content: atPrefix,
+				Tag:     "markdown",
+			})
+		}
+
+		if message.Elements == nil || len(message.Elements) == 0 {
+			content.Body.Elements = append(content.Body.Elements, larkMessageRequestCardElementText{
+				Content: message.Content,
+				Tag:     "markdown",
+			})
+		} else {
+			for _, element := range message.Elements {
+				content.Body.Elements = append(content.Body.Elements, larkMessageRequestCardElementText{
+					Content: element,
+					Tag:     "markdown",
+				})
+			}
+		}
+
 		contentData, err := json.Marshal(content)
 		if err != nil {
 			return err

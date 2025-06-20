@@ -254,6 +254,8 @@ func TriggerWebhook(c *gin.Context) {
 	message := &model.Message{
 		Channel:     webhook.Channel,
 		Title:       constructRule.Title,
+		Type:        constructRule.Type,
+		Elements:    constructRule.Elements,
 		Description: constructRule.Description,
 		Content:     constructRule.Content,
 		URL:         constructRule.URL,

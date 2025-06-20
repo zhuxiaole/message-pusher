@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer/html"
 	"html/template"
 	"log"
 	"net"
@@ -153,6 +154,9 @@ func Markdown2HTML(markdown string) (HTML string, err error) {
 		goldmark.WithExtensions(
 			extension.GFM,
 			extension.Footnote,
+		),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
 		),
 	)
 	err = goldMarkEntity.Convert([]byte(markdown), &buf)

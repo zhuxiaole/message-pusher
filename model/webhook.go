@@ -6,10 +6,12 @@ import (
 
 // WebhookConstructRule Keep compatible with Message
 type WebhookConstructRule struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Content     string `json:"content"`
-	URL         string `json:"url"`
+	Title       string   `json:"title"`
+	Type        string   `json:"type"`
+	Elements    []string `json:"elements"`
+	Description string   `json:"description"`
+	Content     string   `json:"content"`
+	URL         string   `json:"url"`
 }
 
 type Webhook struct {

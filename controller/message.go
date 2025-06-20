@@ -9,6 +9,7 @@ import (
 	"message-pusher/common"
 	"message-pusher/model"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -75,7 +76,7 @@ func PostPushMessage(c *gin.Context) {
 			RenderMode:  c.PostForm("render_mode"),
 		}
 	}
-	if message == (model.Message{}) {
+	if reflect.DeepEqual(message, model.Message{}) {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "请求体为空，如果使用 JSON 请设置 Content-Type 为 application/json，否则请使用表单提交",
@@ -273,10 +274,33 @@ func RenderMessage(c *gin.Context) {
 				common.SysLog(err.Error())
 			}
 		}
-		if message.Content != "" {
-			message.HTMLContent, err = common.Markdown2HTML(message.Content)
-			if err != nil {
-				common.SysLog(err.Error())
+
+		elementsCount := 0
+		if message.Elements != nil {
+			elementsCount = len(message.Elements)
+		}
+		if elementsCount > 0 {
+			elementsContent := ""
+			for i, element := range message.Elements {
+				if element != "" {
+					elementContent, elementErr := common.Markdown2HTML(element)
+					if elementErr != nil {
+						common.SysLog(elementErr.Error())
+					}
+					elementsContent += elementContent
+					if i < elementsCount-1 {
+						elementsContent += "<br/>"
+					}
+				}
+			}
+
+			message.HTMLContent = elementsContent
+		} else {
+			if message.Content != "" {
+				message.HTMLContent, err = common.Markdown2HTML(message.Content)
+				if err != nil {
+					common.SysLog(err.Error())
+				}
 			}
 		}
 	}
@@ -322,6 +346,38 @@ func GetMessage(c *gin.Context) {
 		})
 		return
 	}
+
+	elementsCount := 0
+	if message.Elements != nil {
+		elementsCount = len(message.Elements)
+	}
+	if elementsCount > 0 {
+		elementsMdContent := ""
+		elementsHtmlContent := ""
+		for i, element := range message.Elements {
+			if element != "" {
+				elementsMdContent += element
+				elementHtmlContent, elementErr := common.Markdown2HTML(element)
+				if elementErr != nil {
+					c.JSON(http.StatusOK, gin.H{
+						"success": false,
+						"message": elementErr.Error(),
+					})
+					return
+				}
+
+				elementsHtmlContent += elementHtmlContent
+				if i < elementsCount-1 {
+					elementsMdContent += "\n"
+					elementsHtmlContent += "<br/>"
+				}
+			}
+		}
+
+		message.Content = elementsMdContent
+		message.HTMLContent = elementsHtmlContent
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

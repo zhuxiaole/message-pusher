@@ -1,30 +1,50 @@
 package model
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"errors"
 	"message-pusher/common"
 	"time"
 )
 
+type MessageElements []string
+
+func (t *MessageElements) Scan(value interface{}) error {
+	if value == nil {
+		*t = []string{}
+		return nil
+	} else {
+		bytesValue, _ := value.([]byte)
+		return json.Unmarshal(bytesValue, t)
+	}
+}
+
+func (t MessageElements) Value() (driver.Value, error) {
+	return json.Marshal(t)
+}
+
 type Message struct {
-	Id          int    `json:"id"`
-	UserId      int    `json:"user_id" gorm:"index"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Content     string `json:"content"`
-	URL         string `json:"url" gorm:"column:url"`
-	Channel     string `json:"channel"`
-	Token       string `json:"token" gorm:"-:all"`
-	HTMLContent string `json:"html_content"  gorm:"-:all"`
-	Timestamp   int64  `json:"timestamp" gorm:"type:bigint"`
-	Link        string `json:"link" gorm:"unique;index"`
-	To          string `json:"to" gorm:"column:to"`           // if specified, will send to this user(s)
-	Status      int    `json:"status" gorm:"default:0;index"` // pending, sent, failed
-	OpenId      string `json:"openid" gorm:"-:all"`           // alias for to
-	Desp        string `json:"desp" gorm:"-:all"`             // alias for content
-	Short       string `json:"short" gorm:"-:all"`            // alias for description
-	Async       bool   `json:"async" gorm:"-"`                // if true, will send message asynchronously
-	RenderMode  string `json:"render_mode" gorm:"raw"`        // markdown (default), code, raw
+	Id          int             `json:"id"`
+	UserId      int             `json:"user_id" gorm:"index"`
+	Title       string          `json:"title"`
+	Type        string          `json:"type"`
+	Elements    MessageElements `json:"elements"`
+	Description string          `json:"description"`
+	Content     string          `json:"content"`
+	URL         string          `json:"url" gorm:"column:url"`
+	Channel     string          `json:"channel"`
+	Token       string          `json:"token" gorm:"-:all"`
+	HTMLContent string          `json:"html_content"  gorm:"-:all"`
+	Timestamp   int64           `json:"timestamp" gorm:"type:bigint"`
+	Link        string          `json:"link" gorm:"unique;index"`
+	To          string          `json:"to" gorm:"column:to"`           // if specified, will send to this user(s)
+	Status      int             `json:"status" gorm:"default:0;index"` // pending, sent, failed
+	OpenId      string          `json:"openid" gorm:"-:all"`           // alias for to
+	Desp        string          `json:"desp" gorm:"-:all"`             // alias for content
+	Short       string          `json:"short" gorm:"-:all"`            // alias for description
+	Async       bool            `json:"async" gorm:"-"`                // if true, will send message asynchronously
+	RenderMode  string          `json:"render_mode" gorm:"raw"`        // markdown (default), code, raw
 }
 
 func GetMessageByIds(id int, userId int) (*Message, error) {
